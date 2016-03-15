@@ -293,45 +293,51 @@ static inline float yPlotValue(float maxHeight, float yInc, float val, float min
     const CGFloat maxTextWidth = CGRectGetWidth(self.bounds) * MAX_TEXT_FRAC;
 
     // see how much text we have to show
-    if ( self.labelText == nil )
-        self.labelText = @"not set";
+    NSString *text = self.labelText;
+    if (text == nil)
+        text = @"";
     
-    NSMutableString *graphText = [[NSMutableString alloc] initWithString:self.labelText];
-    if (self.showCurrentValue) {
+    CGSize textSize = CGSizeMake(0,0);
+    NSMutableString *graphText = [[NSMutableString alloc] initWithString:text];
+    if (self.showCurrentValue)
+    {
         [graphText appendString:@" "];
         [graphText appendFormat:self.currentValueFormat, [self.dataCurrentValue floatValue]];
     }
+    if (graphText.length > 0)
+    {
+        // calculate the width the text would take with the specified font
+        UIFont *font = [UIFont fontWithName:LABEL_FONT size:DEFAULT_FONT_SIZE];
+        CGFloat actualFontSize;
+        textSize = [graphText sizeWithFont:font
+                                      minFontSize:MIN_FONT_SIZE
+                                   actualFontSize:&actualFontSize
+                                         forWidth:maxTextWidth
+                                    lineBreakMode:ASBLineBreakModeClip];
+       
+        
+        // first we draw the label
+        const CGFloat textStartX = (CGRectGetWidth(self.bounds) * 0.975f) - textSize.width;
+        const CGFloat textStartY = CGRectGetMidY(self.bounds) - (textSize.height / 2.0f);
+        CGPoint textStart = CGPointMake(textStartX, textStartY);
 
-    // calculate the width the text would take with the specified font
-    UIFont *font = [UIFont fontWithName:LABEL_FONT size:DEFAULT_FONT_SIZE];
-    CGFloat actualFontSize;
-    CGSize textSize = [graphText sizeWithFont:font
-                                  minFontSize:MIN_FONT_SIZE
-                               actualFontSize:&actualFontSize
-                                     forWidth:maxTextWidth
-                                lineBreakMode:ASBLineBreakModeClip];
-   
-    
-    // first we draw the label
-    const CGFloat textStartX = (CGRectGetWidth(self.bounds) * 0.975f) - textSize.width;
-    const CGFloat textStartY = CGRectGetMidY(self.bounds) - (textSize.height / 2.0f);
-    CGPoint textStart = CGPointMake(textStartX, textStartY);
-
-    // using the specified font
-    font = [UIFont fontWithName:LABEL_FONT size:actualFontSize];
-    CGSize labelDrawnSize = [self.labelText drawAtPoint:textStart withFont:font];
-    
-    // conditionally draw the current value in the chosen colour
-    if (self.showCurrentValue) {
-        CGContextSaveGState(context);
-        [self.currentValueColor setFill];
-        textStart = CGPointMake(textStartX + labelDrawnSize.width, textStartY);
-        [[@" " stringByAppendingFormat:self.currentValueFormat, [self.dataCurrentValue floatValue]] drawAtPoint:textStart
-                                                                                                       withFont:font];
-        CGContextRestoreGState(context);
+        // using the specified font
+        font = [UIFont fontWithName:LABEL_FONT size:actualFontSize];
+        CGSize labelDrawnSize = [self.labelText sizeWithAttributes:@{NSFontAttributeName:font}];
+        
+        
+        
+        // conditionally draw the current value in the chosen colour
+        if (self.showCurrentValue)
+        {
+            CGContextSaveGState(context);
+            [self.currentValueColor setFill];
+            textStart = CGPointMake(textStartX + labelDrawnSize.width, textStartY);
+            [[@" " stringByAppendingFormat:self.currentValueFormat, [self.dataCurrentValue floatValue]] drawAtPoint:textStart withAttributes:@{NSFontAttributeName:font}];
+            CGContextRestoreGState(context);
+        }
     }
-    
-
+        
     // ---------------------------------------------------
     // Graph Drawing
     // ---------------------------------------------------
