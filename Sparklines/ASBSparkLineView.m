@@ -214,10 +214,11 @@ static inline float yPlotValue(float maxHeight, float yInc, float val, float min
 }
 
 // convienence initializer
-- (void)awakeFromNib {
+- (void)awakeFromNib
+{
+    [super awakeFromNib];
     [self setup];
 }
-
 
 // configures the defaults (used in init or when waking from a nib)
 - (void)setup {
@@ -281,6 +282,29 @@ static inline float yPlotValue(float maxHeight, float yInc, float val, float min
 
 #pragma mark Drawing Methods
 
+- (CGSize)sizeForText:(NSString*)text withFont:(UIFont*)font minFontSize:(CGFloat)minFontSize actualFontSize:(CGFloat *)actualFontSize forWidth:(CGFloat)width lineBreakMode:(NSLineBreakMode)lineBreakMode
+{
+    // TODO: Figure out what to do with minFontSize and actualFontSize, as there doesn't seem to be an API for those anymore
+    
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle defaultParagraphStyle] mutableCopy];
+    paragraphStyle.lineBreakMode = ASBLineBreakModeClip;
+    
+    NSDictionary *attributes = @{NSFontAttributeName:font,NSParagraphStyleAttributeName:paragraphStyle};
+
+    CGSize constraint = CGSizeMake(width, 20000.0f);
+    
+    CGRect textRect = [text boundingRectWithSize:constraint options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil];
+    
+    //Contains both width & height ... Needed: The height
+    return textRect.size;
+        
+//    return [graphText sizeWithFont:font
+//                minFontSize:MIN_FONT_SIZE
+//             actualFontSize:&actualFontSize
+//                   forWidth:maxTextWidth
+//              lineBreakMode:ASBLineBreakModeClip];
+}
+
 // draws all the elements of this view
 - (void)drawRect:(CGRect)rect {
 
@@ -309,7 +333,8 @@ static inline float yPlotValue(float maxHeight, float yInc, float val, float min
         // calculate the width the text would take with the specified font
         UIFont *font = [UIFont fontWithName:LABEL_FONT size:DEFAULT_FONT_SIZE];
         CGFloat actualFontSize;
-        textSize = [graphText sizeWithFont:font
+        textSize = [self sizeForText:graphText
+                                    withFont:font
                                       minFontSize:MIN_FONT_SIZE
                                    actualFontSize:&actualFontSize
                                          forWidth:maxTextWidth
